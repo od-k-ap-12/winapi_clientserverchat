@@ -75,7 +75,6 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wp, LPARAM lp)
             EnableWindow(hStopButton, TRUE);
         }
         else if (LOWORD(wp) == IDC_SEND) {
-            //const char Text[200] = "text";
             char Text[200];
             wstring wbuf;
             GetWindowText(hSend, (LPWSTR)wbuf.data(), wbuf.size());
@@ -92,8 +91,6 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wp, LPARAM lp)
             wstring wbuf;
             int i = recv(_socket, buf, MAXSTRLEN, 0);
             buf[i] = '\0';
-
-            //wbuf.resize(MultiByteToWideChar(CP_UTF8, 0, buf, -1, 0, 0));
             MultiByteToWideChar(CP_ACP, 0, buf, -1, (LPWSTR)wbuf.data(), wbuf.size());
             SetWindowText(hReceive, wbuf.c_str());
         }

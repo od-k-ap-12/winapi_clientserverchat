@@ -96,7 +96,6 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wp, LPARAM lp)
 			int i = recv(acceptSocket, buf, MAXSTRLEN, 0);
 			buf[i] = '\0';
 
-			//wbuf.resize(MultiByteToWideChar(CP_UTF8, 0, buf, -1, NULL, 0));
 			MultiByteToWideChar(CP_UTF8, 0, buf, -1, (LPWSTR)wbuf.data(), wbuf.size());
 			if (strcmp(buf, "buy") == 0) {
 				const char Products[100] = "\t 1.Телефон-7800 грн\n2.Планшет-9000 грн\n3.Ноутбук-26000 грн\nВведите номер желаемого продукта.";
