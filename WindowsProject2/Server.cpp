@@ -2,30 +2,25 @@
 #include "WindowsProject2.h"
 #include <iostream>
 #include <string>
-#include "WinSock2.h" //здесь находятся объявления, необходимые
-//для Winsock 2 API.
-#include <ws2tcpip.h> //содержит функции для работы с адресами
- //напр. inet_pton
-#pragma comment(lib, "Ws2_32.lib") //линкуем библиотеку Windows Sockets
-//#define _UNICODE
-//#define UNICODE
+#include "WinSock2.h"
+#include <ws2tcpip.h>
+#pragma comment(lib, "Ws2_32.lib")
 using namespace std;
 
 
 #define MAX_LOADSTRING 100
 
-HINSTANCE hInst;                                // current instance
-WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+HINSTANCE hInst;                               
+WCHAR szTitle[MAX_LOADSTRING];                  
+WCHAR szWindowClass[MAX_LOADSTRING];            
 BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
 
 const int MAXSTRLEN = 255;
-WSADATA wsaData;//структура для хранения информацию
-                //о инициализации сокетов
-SOCKET _socket; //дескриптор слушающего сокета
-SOCKET acceptSocket;//дескриптор сокета, который связан с клиентом 
-sockaddr_in addr; //локальный адрес и порт
-HWND hIP, hReceive, hSend;
+WSADATA wsaData;
+SOCKET _socket;
+SOCKET acceptSocket;
+sockaddr_in addr;
+HWND hIP, hReceive, hSend,hReceiveButton,hSendButton,hStopButton;
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
@@ -48,6 +43,14 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wp, LPARAM lp)
     case  WM_INITDIALOG: {
 		hSend = GetDlgItem(hWnd, IDC_SENDMESSAGE); 
 		hReceive = GetDlgItem(hWnd, IDC_RECEIVEMESSAGE);
+		hSendButton = GetDlgItem(hWnd, IDC_SEND);
+		hReceiveButton = GetDlgItem(hWnd, IDC_RECEIVE);
+		hStopButton = GetDlgItem(hWnd, IDC_STOP);
+		EnableWindow(hSend, FALSE);
+		EnableWindow(hReceive, FALSE);
+		EnableWindow(hSendButton, FALSE);
+		EnableWindow(hReceiveButton, FALSE);
+		EnableWindow(hStopButton, FALSE);
         return TRUE;
     }
 
@@ -68,6 +71,11 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wp, LPARAM lp)
 			listen(_socket, 1);
 
 			acceptSocket = accept(_socket, NULL, NULL);
+			EnableWindow(hSend, TRUE);
+			EnableWindow(hReceive, TRUE);
+			EnableWindow(hSendButton, TRUE);
+			EnableWindow(hReceiveButton, TRUE);
+			EnableWindow(hStopButton, TRUE);
 		}
 		else if (LOWORD(wp) == IDC_STOP) {
 			closesocket(acceptSocket);
@@ -76,9 +84,10 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wp, LPARAM lp)
 			system("pause");
 		}
 		else if (LOWORD(wp) == IDC_SEND) {
-			//const char Text[200]="Hello World";
 			char Text[200];
-			GetWindowText(hSend, (LPWSTR)Text, 100);
+			wstring wbuf;
+			GetWindowText(hSend, (LPWSTR)wbuf.data(), wbuf.size());
+			WideCharToMultiByte(CP_UTF8, 0, wbuf.data(), wbuf.size(), Text, wbuf.length(), NULL, NULL);
 			send(acceptSocket, Text, strlen(Text), 0);
 		}
 		else if (LOWORD(wp) == IDC_RECIEVE) {
@@ -87,8 +96,40 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wp, LPARAM lp)
 			int i = recv(acceptSocket, buf, MAXSTRLEN, 0);
 			buf[i] = '\0';
 
-			wbuf.resize(MultiByteToWideChar(CP_UTF8, 0, buf, -1, NULL, 0));
+			//wbuf.resize(MultiByteToWideChar(CP_UTF8, 0, buf, -1, NULL, 0));
 			MultiByteToWideChar(CP_UTF8, 0, buf, -1, (LPWSTR)wbuf.data(), wbuf.size());
+			if (strcmp(buf, "buy") == 0) {
+				const char Products[100] = "\t 1.Телефон-7800 грн\n2.Планшет-9000 грн\n3.Ноутбук-26000 грн\nВведите номер желаемого продукта.";
+				send(acceptSocket, Products, strlen(Products), 0);
+
+				int i = recv(acceptSocket, buf, MAXSTRLEN, 0);
+				buf[i] = '\0';
+				int Number = atoi(buf);
+				if (Number > 0 && Number <= 3) {
+					const char Products[40] = "\nВведите кол-во желаемого продукта.";
+					send(acceptSocket, Products, strlen(Products), 0);
+					i = recv(acceptSocket, buf, MAXSTRLEN, 0);
+					buf[i] = '\0';
+					int Quantity = atoi(buf);
+					int Price;
+					switch (Number) {
+					case 1: {
+					Price = 7800 * Quantity;
+						break;
+					}
+					case 2: {
+					Price = 9000 * Quantity;
+					break;
+					}
+					case 3: {
+					Price = 26000 * Quantity;
+					break;
+					}
+						  char Final[20];
+				     itoa(Price,Final,0);
+					 send(acceptSocket, Final, strlen(Final), 0);
+					}
+			}
 			SetWindowText(hReceive, wbuf.c_str());
 		}
 
@@ -97,3 +138,6 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wp, LPARAM lp)
     }
     return FALSE;
 }
+
+
+

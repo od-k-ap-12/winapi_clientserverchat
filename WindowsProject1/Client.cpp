@@ -2,30 +2,24 @@
 #include "WindowsProject1.h"
 #include <iostream>
 #include <string>
-#include "WinSock2.h" //здесь находятся объявления, необходимые
-//для Winsock 2 API.
-#include <ws2tcpip.h> //содержит функции для работы с адресами
- //напр. inet_pton
-#pragma comment(lib, "Ws2_32.lib") //линкуем библиотеку Windows Sockets
-#define UNICODE
-#define _UNICODE
-
+#include "WinSock2.h"
+#include <ws2tcpip.h> 
+#pragma comment(lib, "Ws2_32.lib")
 using namespace std;
 
 
 #define MAX_LOADSTRING 100
 
-HINSTANCE hInst;                                // current instance
-WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+HINSTANCE hInst;                                
+WCHAR szTitle[MAX_LOADSTRING];                  
+WCHAR szWindowClass[MAX_LOADSTRING];            
 BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
 
 const int MAXSTRLEN = 255;
-WSADATA wsaData;//структура для хранения информацию
-                //о инициализации сокетов
-SOCKET _socket; //дескриптор сокета
-sockaddr_in addr; //локальный адрес и порт
-HWND hIP,hReceive,hSend;
+WSADATA wsaData;
+SOCKET _socket;
+sockaddr_in addr;
+HWND hIP,hReceive,hSend,hSendButton,hReceiveButton,hStopButton;
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
@@ -49,28 +43,44 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wp, LPARAM lp)
         hIP = GetDlgItem(hWnd, IDC_IP);
         hSend = GetDlgItem(hWnd, IDC_SENDMESSAGE);
         hReceive = GetDlgItem(hWnd, IDC_RECEIVEMESSAGE);
+        hSendButton = GetDlgItem(hWnd, IDC_SEND);
+        hReceiveButton = GetDlgItem(hWnd, IDC_RECEIVE);
+        hStopButton= GetDlgItem(hWnd, IDC_STOP);
+        EnableWindow(hSend, FALSE);
+        EnableWindow(hReceive, FALSE);
+        EnableWindow(hSendButton, FALSE);
+        EnableWindow(hReceiveButton, FALSE);
+        EnableWindow(hStopButton, FALSE);
         WSAStartup(MAKEWORD(2, 2), &wsaData);
-        //создаем потоковый сокет, протокол TCP
         _socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        //Семейство адресов IPv4
         addr.sin_family = AF_INET; 
         return TRUE;
     }
 
     case WM_COMMAND: {
         if (LOWORD(wp) == IDC_CONNECT) {
-            const char buffer[40]{};
-            GetWindowText(hIP, (LPWSTR)buffer, 20);
-            inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+
+            char IP[200];
+            wstring wbuf;
+            GetWindowText(hIP, (LPWSTR)wbuf.data(), wbuf.size());
+            WideCharToMultiByte(CP_ACP, 0, wbuf.data(), wbuf.size(), IP, wbuf.length(), 0, 0);
+
+            inet_pton(AF_INET, IP, &addr.sin_addr);
             addr.sin_port = htons(20000);
             connect(_socket, (SOCKADDR*)&addr, sizeof(addr));
+            EnableWindow(hSend, TRUE);
+            EnableWindow(hReceive, TRUE);
+            EnableWindow(hSendButton, TRUE);
+            EnableWindow(hReceiveButton, TRUE);
+            EnableWindow(hStopButton, TRUE);
         }
         else if (LOWORD(wp) == IDC_SEND) {
-            //const char Text[200]="Hello World";
+            //const char Text[200] = "text";
             char Text[200];
             wstring wbuf;
             GetWindowText(hSend, (LPWSTR)wbuf.data(), wbuf.size());
-            send(_socket, wbuf.c_str(), strlen(Text), 0);
+            WideCharToMultiByte(CP_ACP, 0, wbuf.data(), wbuf.size(), Text, wbuf.length(), 0, 0);
+            send(_socket, Text, strlen(Text), 0);
 
         }
         else if (LOWORD(wp) == IDC_STOP) {
@@ -83,8 +93,8 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wp, LPARAM lp)
             int i = recv(_socket, buf, MAXSTRLEN, 0);
             buf[i] = '\0';
 
-            wbuf.resize(MultiByteToWideChar(CP_UTF8, 0, buf, -1, NULL, 0));
-            MultiByteToWideChar(CP_UTF8, 0, buf, -1, (LPWSTR)wbuf.data(), wbuf.size());
+            //wbuf.resize(MultiByteToWideChar(CP_UTF8, 0, buf, -1, 0, 0));
+            MultiByteToWideChar(CP_ACP, 0, buf, -1, (LPWSTR)wbuf.data(), wbuf.size());
             SetWindowText(hReceive, wbuf.c_str());
         }
 
